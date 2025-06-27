@@ -70,7 +70,7 @@ dupeButton.MouseButton1Click:Connect(function()
 
 	-- Execute the loadstring script
 	pcall(function()
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/VixorHub/VixorHub-DupeGaG/refs/heads/main/VixorHub-DupeGaG.txt))()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/VixorHub/VixorHub-DupeGaG/refs/heads/main/VixorHub-DupeGaG.txt"))()
         end)
 
 	print("Dupe script executed!")
